@@ -1,0 +1,724 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Selector de Windows 10 - Ultimate Web Simulator</title>
+    <style>
+        /* ========== RESET Y VARIABLES ========== */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', 'Segoe UI Web (West European)', -apple-system, BlinkMacSystemFont, Roboto, 'Helvetica Neue', sans-serif;
+        }
+
+        :root {
+            --accent: #0078d7;
+            --accent-dark: #005a9e;
+            --bg-dark: #0a0a0a;
+            --bg-card: rgba(30, 30, 30, 0.85);
+            --border-color: rgba(255, 255, 255, 0.1);
+            --text-light: #ffffff;
+            --shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+            --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        body {
+            width: 100vw;
+            height: 100vh;
+            overflow: hidden;
+            background: linear-gradient(135deg, #0a1628 0%, #1a2a4a 30%, #0d1b2a 70%, #050a15 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-light);
+        }
+
+        /* ========== CONTENEDOR PRINCIPAL ========== */
+        .selector-container {
+            width: 100%;
+            max-width: 1100px;
+            padding: 40px 20px;
+            text-align: center;
+            animation: fadeIn 0.8s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* ========== LOGO Y TÍTULO ========== */
+        .logo-area {
+            margin-bottom: 40px;
+        }
+
+        .logo-icon {
+            width: 80px;
+            height: 80px;
+            margin: 0 auto 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .logo-icon svg {
+            width: 100%;
+            height: 100%;
+            filter: drop-shadow(0 0 20px rgba(0, 120, 215, 0.5));
+        }
+
+        .main-title {
+            font-size: 42px;
+            font-weight: 300;
+            letter-spacing: -1px;
+            margin-bottom: 10px;
+            background: linear-gradient(135deg, #ffffff, #a0c4ff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .subtitle {
+            font-size: 16px;
+            color: rgba(255, 255, 255, 0.5);
+            font-weight: 300;
+            margin-bottom: 8px;
+        }
+
+        .version-tag {
+            display: inline-block;
+            font-size: 11px;
+            background: rgba(0, 120, 215, 0.2);
+            color: #4da3ff;
+            padding: 4px 12px;
+            border-radius: 12px;
+            border: 1px solid rgba(0, 120, 215, 0.3);
+            margin-top: 8px;
+        }
+
+        /* ========== GRID DE OPCIONES ========== */
+        .os-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 24px;
+            margin-bottom: 40px;
+        }
+
+        .os-card {
+            background: var(--bg-card);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 32px 24px;
+            cursor: pointer;
+            transition: var(--transition);
+            position: relative;
+            overflow: hidden;
+            text-decoration: none;
+            color: inherit;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            animation: cardSlide 0.6s ease-out backwards;
+        }
+
+        .os-card:nth-child(1) { animation-delay: 0.1s; }
+        .os-card:nth-child(2) { animation-delay: 0.2s; }
+        .os-card:nth-child(3) { animation-delay: 0.3s; }
+
+        @keyframes cardSlide {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .os-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: var(--card-accent, var(--accent));
+            transition: var(--transition);
+        }
+
+        .os-card:hover {
+            transform: translateY(-8px);
+            border-color: var(--card-accent, var(--accent));
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4), 0 0 30px rgba(0, 120, 215, 0.1);
+        }
+
+        .os-card:hover .os-icon {
+            transform: scale(1.1);
+        }
+
+        .os-card:hover .os-action {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .os-icon {
+            width: 72px;
+            height: 72px;
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 36px;
+            margin-bottom: 20px;
+            transition: var(--transition);
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .os-name {
+            font-size: 20px;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: #fff;
+        }
+
+        .os-desc {
+            font-size: 13px;
+            color: rgba(255, 255, 255, 0.5);
+            line-height: 1.5;
+            margin-bottom: 20px;
+            min-height: 40px;
+        }
+
+        .os-meta {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            justify-content: center;
+            margin-bottom: 20px;
+        }
+
+        .os-badge {
+            font-size: 10px;
+            padding: 4px 10px;
+            border-radius: 10px;
+            background: rgba(255, 255, 255, 0.08);
+            color: rgba(255, 255, 255, 0.6);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .os-action {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--card-accent, var(--accent));
+            opacity: 0.7;
+            transform: translateY(5px);
+            transition: var(--transition);
+            margin-top: auto;
+        }
+
+        .os-action svg {
+            width: 16px;
+            height: 16px;
+        }
+
+        /* ========== FOOTER ========== */
+        .footer {
+            margin-top: 20px;
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.3);
+            line-height: 1.8;
+        }
+
+        .footer a {
+            color: rgba(255, 255, 255, 0.5);
+            text-decoration: none;
+            transition: var(--transition);
+        }
+
+        .footer a:hover {
+            color: var(--accent);
+        }
+
+        .footer .separator {
+            margin: 0 8px;
+            color: rgba(255, 255, 255, 0.2);
+        }
+
+        /* ========== INDICADOR DE SELECCIÓN ========== */
+        .selection-info {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(10px);
+            padding: 10px 24px;
+            border-radius: 20px;
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.6);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            opacity: 0;
+            transition: var(--transition);
+            pointer-events: none;
+            z-index: 100;
+        }
+
+        .selection-info.visible {
+            opacity: 1;
+        }
+
+        /* ========== RESPONSIVE ========== */
+        @media (max-width: 768px) {
+            .main-title {
+                font-size: 28px;
+            }
+
+            .os-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .selector-container {
+                padding: 20px 16px;
+                overflow-y: auto;
+                height: 100vh;
+                display: flex;
+                flex-direction: column;
+                justify-content: center;
+            }
+
+            .os-card {
+                padding: 24px 20px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .main-title {
+                font-size: 22px;
+            }
+
+            .subtitle {
+                font-size: 13px;
+            }
+
+            .os-icon {
+                width: 56px;
+                height: 56px;
+                font-size: 28px;
+            }
+
+            .os-name {
+                font-size: 17px;
+            }
+        }
+
+        /* ========== ANIMACIÓN DE CARGA ========== */
+        .loader {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            transition: opacity 0.5s ease;
+        }
+
+        .loader.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .loader-spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid rgba(255, 255, 255, 0.1);
+            border-top-color: var(--accent);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* ========== BOTÓN DE TEMA ========== */
+        .theme-toggle {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: #fff;
+            font-size: 18px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: var(--transition);
+            z-index: 100;
+        }
+
+        .theme-toggle:hover {
+            background: rgba(255, 255, 255, 0.15);
+            transform: scale(1.1);
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Loader -->
+    <div class="loader" id="loader">
+        <div class="loader-spinner"></div>
+    </div>
+
+    <!-- Botón de tema -->
+    <button class="theme-toggle" id="theme-toggle" title="Cambiar tema">🌙</button>
+
+    <!-- Contenedor principal -->
+    <div class="selector-container" id="selector-container">
+
+        <!-- Logo y título -->
+        <div class="logo-area">
+            <div class="logo-icon">
+                <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <rect x="10" y="10" width="35" height="35" rx="4" fill="url(#grad1)"/>
+                    <rect x="55" y="10" width="35" height="35" rx="4" fill="url(#grad2)"/>
+                    <rect x="10" y="55" width="35" height="35" rx="4" fill="url(#grad3)"/>
+                    <rect x="55" y="55" width="35" height="35" rx="4" fill="url(#grad4)"/>
+                    <defs>
+                        <linearGradient id="grad1" x1="0" y1="0" x2="1" y2="1">
+                            <stop offset="0%" stop-color="#0078d7"/>
+                            <stop offset="100%" stop-color="#005a9e"/>
+                        </linearGradient>
+                        <linearGradient id="grad2" x1="0" y1="0" x2="1" y2="1">
+                            <stop offset="0%" stop-color="#00bcd4"/>
+                            <stop offset="100%" stop-color="#008ba3"/>
+                        </linearGradient>
+                        <linearGradient id="grad3" x1="0" y1="0" x2="1" y2="1">
+                            <stop offset="0%" stop-color="#8e44ad"/>
+                            <stop offset="100%" stop-color="#6c3483"/>
+                        </linearGradient>
+                        <linearGradient id="grad4" x1="0" y1="0" x2="1" y2="1">
+                            <stop offset="0%" stop-color="#e74c3c"/>
+                            <stop offset="100%" stop-color="#c0392b"/>
+                        </linearGradient>
+                    </defs>
+                </svg>
+            </div>
+            <h1 class="main-title">Windows 10 Ultimate Web Simulator</h1>
+            <p class="subtitle">Selecciona tu versión preferida del simulador</p>
+            <span class="version-tag">Build 19045-WEB · Multi-IA Edition</span>
+        </div>
+
+        <!-- Grid de opciones -->
+        <div class="os-grid" id="os-grid">
+
+            <!-- Claude -->
+            <a href="Windows 10 claude.html" class="os-card" style="--card-accent: #d97706;" data-os="claude">
+                <div class="os-icon" style="background: rgba(217, 119, 6, 0.15); border-color: rgba(217, 119, 6, 0.3);">
+                    🟠
+                </div>
+                <h2 class="os-name">Windows 10 Claude</h2>
+                <p class="os-desc">
+                    Versión optimizada por Claude. Interfaz limpia, estable y con un enfoque en la experiencia de usuario fluida.
+                </p>
+                <div class="os-meta">
+                    <span class="os-badge">Anthropic</span>
+                    <span class="os-badge">6132 líneas</span>
+                    <span class="os-badge">Estable</span>
+                </div>
+                <div class="os-action">
+                    <span>Iniciar simulador</span>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M5 12h14M12 5l7 7-7 7"/>
+                    </svg>
+                </div>
+            </a>
+
+            <!-- DeepSeek -->
+            <a href="windows 10 deepseek.html" class="os-card" style="--card-accent: #0078d7;" data-os="deepseek">
+                <div class="os-icon" style="background: rgba(0, 120, 215, 0.15); border-color: rgba(0, 120, 215, 0.3);">
+                    🔵
+                </div>
+                <h2 class="os-name">Windows 10 DeepSeek</h2>
+                <p class="os-desc">
+                    Versión creada por DeepSeek. Código robusto y completo, con todas las funciones del simulador original.
+                </p>
+                <div class="os-meta">
+                    <span class="os-badge">DeepSeek</span>
+                    <span class="os-badge">Completo</span>
+                    <span class="os-badge">Recomendado</span>
+                </div>
+                <div class="os-action">
+                    <span>Iniciar simulador</span>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M5 12h14M12 5l7 7-7 7"/>
+                    </svg>
+                </div>
+            </a>
+
+            <!-- Gemini -->
+            <a href="windows 10 gemini.html" class="os-card" style="--card-accent: #8e44ad;" data-os="gemini">
+                <div class="os-icon" style="background: rgba(142, 68, 173, 0.15); border-color: rgba(142, 68, 173, 0.3);">
+                    🟣
+                </div>
+                <h2 class="os-name">Windows 10 Gemini</h2>
+                <p class="os-desc">
+                    Versión desarrollada por Gemini. Innovadora, con características únicas y un enfoque experimental.
+                </p>
+                <div class="os-meta">
+                    <span class="os-badge">Google</span>
+                    <span class="os-badge">Experimental</span>
+                    <span class="os-badge">Creativo</span>
+                </div>
+                <div class="os-action">
+                    <span>Iniciar simulador</span>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M5 12h14M12 5l7 7-7 7"/>
+                    </svg>
+                </div>
+            </a>
+
+        </div>
+
+        <!-- Footer -->
+        <div class="footer">
+            <p>
+                <a href="https://github.com/anyelo888ra-ux/windows-10" target="_blank">GitHub Repository</a>
+                <span class="separator">·</span>
+                <span>MIT License</span>
+                <span class="separator">·</span>
+                <span>COOL SYSTEMS LAB</span>
+            </p>
+            <p style="margin-top: 8px; font-size: 11px;">
+                Windows 10 Ultimate Web Simulator — Proyecto educativo y de entretenimiento.
+            </p>
+        </div>
+
+    </div>
+
+    <!-- Indicador de selección -->
+    <div class="selection-info" id="selection-info">
+        Cargando simulador...
+    </div>
+
+    <script>
+        // ============================================================
+        // SELECTOR DE WINDOWS 10 - ULTIMATE WEB SIMULATOR
+        // ============================================================
+
+        'use strict';
+
+        // ========== CONFIGURACIÓN ==========
+        const CONFIG = {
+            version: '1.0.0',
+            defaultTheme: 'dark',
+            loaderDuration: 800,
+            selectionDelay: 400
+        };
+
+        // ========== ESTADO ==========
+        let currentTheme = 'dark';
+
+        // ========== ELEMENTOS DOM ==========
+        const loader = document.getElementById('loader');
+        const selectorContainer = document.getElementById('selector-container');
+        const themeToggle = document.getElementById('theme-toggle');
+        const selectionInfo = document.getElementById('selection-info');
+        const osCards = document.querySelectorAll('.os-card');
+
+        // ========== INICIALIZACIÓN ==========
+        function init() {
+            // Ocultar loader después de un tiempo
+            setTimeout(() => {
+                loader.classList.add('hidden');
+                selectorContainer.style.opacity = '1';
+            }, CONFIG.loaderDuration);
+
+            // Cargar tema guardado
+            loadTheme();
+
+            // Configurar eventos
+            setupEvents();
+
+            // Configurar atajos de teclado
+            setupKeyboardShortcuts();
+
+            console.log('Windows 10 Ultimate Web Simulator - Selector v' + CONFIG.version);
+            console.log('Selecciona una versión para comenzar.');
+        }
+
+        // ========== EVENTOS ==========
+        function setupEvents() {
+            // Toggle de tema
+            themeToggle.addEventListener('click', toggleTheme);
+
+            // Click en tarjetas
+            osCards.forEach(card => {
+                card.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    const osName = card.dataset.os;
+                    const osTitle = card.querySelector('.os-name').textContent;
+
+                    // Mostrar indicador
+                    selectionInfo.textContent = 'Cargando ' + osTitle + '...';
+                    selectionInfo.classList.add('visible');
+
+                    // Efecto visual
+                    card.style.transform = 'scale(0.98)';
+                    setTimeout(() => {
+                        card.style.transform = '';
+                    }, 150);
+
+                    // Redirigir después de un breve delay
+                    setTimeout(() => {
+                        window.location.href = card.href;
+                    }, CONFIG.selectionDelay);
+                });
+
+                // Efecto hover con sonido (opcional)
+                card.addEventListener('mouseenter', () => {
+                    // Aquí se podría añadir un sonido sutil
+                });
+            });
+
+            // Detectar cuando la página recupera el foco
+            window.addEventListener('focus', () => {
+                selectionInfo.classList.remove('visible');
+            });
+        }
+
+        // ========== TEMA ==========
+        function loadTheme() {
+            const savedTheme = localStorage.getItem('win10_selector_theme');
+            if (savedTheme) {
+                currentTheme = savedTheme;
+                applyTheme(currentTheme);
+            }
+        }
+
+        function toggleTheme() {
+            currentTheme = currentTheme === 'dark' ? 'light' : 'dark';
+            applyTheme(currentTheme);
+            localStorage.setItem('win10_selector_theme', currentTheme);
+        }
+
+        function applyTheme(theme) {
+            if (theme === 'light') {
+                document.body.style.background = 'linear-gradient(135deg, #e0e8f0 0%, #c0d0e0 30%, #d0dce8 70%, #b0c4d8 100%)';
+                document.body.style.color = '#1a1a1a';
+                themeToggle.textContent = '☀️';
+                document.querySelectorAll('.os-card').forEach(card => {
+                    card.style.background = 'rgba(245, 245, 245, 0.9)';
+                    card.style.borderColor = 'rgba(0, 0, 0, 0.1)';
+                    card.querySelector('.os-name').style.color = '#1a1a1a';
+                    card.querySelector('.os-desc').style.color = 'rgba(0, 0, 0, 0.5)';
+                    card.querySelectorAll('.os-badge').forEach(badge => {
+                        badge.style.background = 'rgba(0, 0, 0, 0.05)';
+                        badge.style.color = 'rgba(0, 0, 0, 0.5)';
+                        badge.style.borderColor = 'rgba(0, 0, 0, 0.1)';
+                    });
+                    card.querySelector('.os-icon').style.background = 'rgba(0, 0, 0, 0.05)';
+                    card.querySelector('.os-icon').style.borderColor = 'rgba(0, 0, 0, 0.1)';
+                });
+                document.querySelector('.main-title').style.background = 'linear-gradient(135deg, #1a1a1a, #4a4a4a)';
+                document.querySelector('.main-title').style.webkitBackgroundClip = 'text';
+                document.querySelector('.main-title').style.webkitTextFillColor = 'transparent';
+                document.querySelector('.subtitle').style.color = 'rgba(0, 0, 0, 0.4)';
+                document.querySelector('.version-tag').style.background = 'rgba(0, 120, 215, 0.15)';
+                document.querySelector('.version-tag').style.color = '#005a9e';
+                document.querySelector('.footer').style.color = 'rgba(0, 0, 0, 0.3)';
+                document.querySelectorAll('.footer a').forEach(a => {
+                    a.style.color = 'rgba(0, 0, 0, 0.5)';
+                });
+                document.querySelector('.selection-info').style.background = 'rgba(255, 255, 255, 0.9)';
+                document.querySelector('.selection-info').style.color = 'rgba(0, 0, 0, 0.6)';
+                document.querySelector('.selection-info').style.borderColor = 'rgba(0, 0, 0, 0.1)';
+            } else {
+                document.body.style.background = 'linear-gradient(135deg, #0a1628 0%, #1a2a4a 30%, #0d1b2a 70%, #050a15 100%)';
+                document.body.style.color = '#ffffff';
+                themeToggle.textContent = '🌙';
+                document.querySelectorAll('.os-card').forEach(card => {
+                    card.style.background = 'rgba(30, 30, 30, 0.85)';
+                    card.style.borderColor = 'rgba(255, 255, 255, 0.1)';
+                    card.querySelector('.os-name').style.color = '#ffffff';
+                    card.querySelector('.os-desc').style.color = 'rgba(255, 255, 255, 0.5)';
+                    card.querySelectorAll('.os-badge').forEach(badge => {
+                        badge.style.background = 'rgba(255, 255, 255, 0.08)';
+                        badge.style.color = 'rgba(255, 255, 255, 0.6)';
+                        badge.style.borderColor = 'rgba(255, 255, 255, 0.1)';
+                    });
+                    card.querySelector('.os-icon').style.background = 'rgba(255, 255, 255, 0.05)';
+                    card.querySelector('.os-icon').style.borderColor = 'rgba(255, 255, 255, 0.1)';
+                });
+                document.querySelector('.main-title').style.background = 'linear-gradient(135deg, #ffffff, #a0c4ff)';
+                document.querySelector('.main-title').style.webkitBackgroundClip = 'text';
+                document.querySelector('.main-title').style.webkitTextFillColor = 'transparent';
+                document.querySelector('.subtitle').style.color = 'rgba(255, 255, 255, 0.5)';
+                document.querySelector('.version-tag').style.background = 'rgba(0, 120, 215, 0.2)';
+                document.querySelector('.version-tag').style.color = '#4da3ff';
+                document.querySelector('.footer').style.color = 'rgba(255, 255, 255, 0.3)';
+                document.querySelectorAll('.footer a').forEach(a => {
+                    a.style.color = 'rgba(255, 255, 255, 0.5)';
+                });
+                document.querySelector('.selection-info').style.background = 'rgba(0, 0, 0, 0.8)';
+                document.querySelector('.selection-info').style.color = 'rgba(255, 255, 255, 0.6)';
+                document.querySelector('.selection-info').style.borderColor = 'rgba(255, 255, 255, 0.1)';
+            }
+        }
+
+        // ========== ATAJOS DE TECLADO ==========
+        function setupKeyboardShortcuts() {
+            document.addEventListener('keydown', (e) => {
+                // 1, 2, 3 para seleccionar OS
+                if (e.key === '1') {
+                    osCards[0].click();
+                } else if (e.key === '2') {
+                    osCards[1].click();
+                } else if (e.key === '3') {
+                    osCards[2].click();
+                }
+
+                // T para cambiar tema
+                if (e.key === 't' || e.key === 'T') {
+                    if (!e.ctrlKey && !e.metaKey) {
+                        toggleTheme();
+                    }
+                }
+
+                // Escape para cerrar indicador
+                if (e.key === 'Escape') {
+                    selectionInfo.classList.remove('visible');
+                }
+            });
+        }
+
+        // ========== INICIAR ==========
+        document.addEventListener('DOMContentLoaded', init);
+
+        // Precargar las páginas para una navegación más rápida (opcional)
+        window.addEventListener('load', () => {
+            // Precargar después de que la página principal haya cargado
+            setTimeout(() => {
+                const links = document.querySelectorAll('.os-card');
+                links.forEach(link => {
+                    const prefetch = document.createElement('link');
+                    prefetch.rel = 'prefetch';
+                    prefetch.href = link.href;
+                    document.head.appendChild(prefetch);
+                });
+            }, 2000);
+        });
+
+    </script>
+</body>
+</html>
