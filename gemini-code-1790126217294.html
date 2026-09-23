@@ -1,0 +1,1298 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Windows 10 Ultimate Web Simulator</title>
+  <style>
+    /* ==========================================================================
+       1. VARIABLES & RESET CSS
+       ========================================================================== */
+    :root {
+      --accent-color: #0078d7;
+      --accent-light: #429ce3;
+      --bg-dark: #111111;
+      --taskbar-bg: rgba(16, 16, 16, 0.85);
+      --window-bg: #f0f0f0;
+      --window-header: #ffffff;
+      --text-main: #ffffff;
+      --text-dark: #000000;
+      --font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      --taskbar-height: 40px;
+      --start-width: 640px;
+      --start-height: 520px;
+    }
+
+    /* Temas de Personalización */
+    body.theme-light { --taskbar-bg: rgba(230, 230, 230, 0.9); --window-bg: #ffffff; --window-header: #f3f3f3; --text-dark: #111; }
+    body.theme-dark { --taskbar-bg: rgba(16, 16, 16, 0.9); --window-bg: #202020; --window-header: #2c2c2c; --text-dark: #eee; }
+    body.theme-classic { --accent-color: #005a9e; --taskbar-bg: rgba(10, 40, 90, 0.9); }
+    body.theme-black { --accent-color: #333333; --taskbar-bg: rgba(0, 0, 0, 0.95); }
+    body.theme-cyberpunk { --accent-color: #ff0055; --taskbar-bg: rgba(10, 10, 30, 0.9); }
+    body.theme-win10exp { --accent-color: #68217a; --taskbar-bg: rgba(30, 10, 40, 0.85); }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      font-family: var(--font-family);
+    }
+
+    body, html {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background-color: #000;
+      color: var(--text-main);
+    }
+
+    /* ==========================================================================
+       2. SECUENCIA DE ARRANQUE & LOGIN
+       ========================================================================== */
+    .screen-overlay {
+      position: absolute;
+      top: 0; left: 0; width: 100%; height: 100%;
+      z-index: 99999;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background-color: #000;
+      transition: opacity 0.5s ease;
+    }
+
+    /* Logo Stylized Windows */
+    .win-logo-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      grid-gap: 4px;
+      width: 80px;
+      height: 80px;
+      margin-bottom: 40px;
+    }
+    .win-logo-grid div { background-color: var(--accent-color); }
+
+    .spinner {
+      width: 40px;
+      height: 40px;
+      border: 4px solid rgba(255,255,255,0.1);
+      border-left-color: #fff;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin-bottom: 20px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .boot-text { font-size: 14px; color: #ccc; margin-top: 10px; }
+
+    /* Pantalla de Bloqueo */
+    #lock-screen {
+      background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+      cursor: pointer;
+    }
+    .lock-clock { font-size: 80px; font-weight: 300; }
+    .lock-date { font-size: 24px; font-weight: 300; margin-bottom: 20px; }
+
+    /* Pantalla de Login */
+    #login-screen {
+      background: linear-gradient(rgba(0,0,0,0.6), rgba(0,0,0,0.6)), url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"><rect width="100" height="100" fill="%230078d7"/></svg>');
+      background-size: cover;
+    }
+    .user-avatar {
+      width: 120px; height: 120px;
+      border-radius: 50%;
+      background: #555;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 48px; color: #fff; margin-bottom: 15px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+    }
+    .login-input-group {
+      display: flex; gap: 5px; margin-top: 15px;
+    }
+    .login-input-group input {
+      padding: 8px 12px; border: 1px solid #fff; background: rgba(0,0,0,0.4);
+      color: #fff; outline: none; width: 200px;
+    }
+    .login-input-group button {
+      padding: 8px 15px; border: 1px solid #fff; background: rgba(255,255,255,0.2);
+      color: #fff; cursor: pointer;
+    }
+    .login-input-group button:hover { background: rgba(255,255,255,0.4); }
+
+    /* ==========================================================================
+       3. ESCRITORIO & ENTORNOS
+       ========================================================================== */
+    #desktop {
+      position: absolute;
+      top: 0; left: 0;
+      width: 100%;
+      height: calc(100% - var(--taskbar-height));
+      background: #004e92;
+      background: linear-gradient(to right, #000428, #004e92);
+      display: flex;
+      flex-direction: column;
+      flex-wrap: wrap;
+      align-content: flex-start;
+      padding: 10px;
+      gap: 10px;
+      overflow: hidden;
+    }
+
+    .desktop-icon {
+      width: 75px;
+      height: 85px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      border: 1px solid transparent;
+      border-radius: 2px;
+      cursor: pointer;
+      color: #fff;
+      text-shadow: 0 1px 2px rgba(0,0,0,0.8);
+      font-size: 11px;
+      text-align: center;
+      padding: 5px;
+    }
+    .desktop-icon:hover {
+      background: rgba(255, 255, 255, 0.15);
+      border-color: rgba(255, 255, 255, 0.2);
+    }
+    .desktop-icon:active, .desktop-icon.selected {
+      background: rgba(255, 255, 255, 0.3);
+      border-color: rgba(255, 255, 255, 0.5);
+    }
+    .desktop-icon svg { width: 36px; height: 36px; margin-bottom: 4px; }
+
+    /* Context Menu */
+    .context-menu {
+      position: absolute;
+      background: rgba(40, 40, 40, 0.95);
+      border: 1px solid #555;
+      backdrop-filter: blur(10px);
+      width: 180px;
+      z-index: 90000;
+      display: none;
+      box-shadow: 2px 2px 10px rgba(0,0,0,0.5);
+      padding: 4px 0;
+    }
+    .context-menu-item {
+      padding: 6px 15px;
+      font-size: 12px;
+      color: #fff;
+      cursor: pointer;
+    }
+    .context-menu-item:hover { background: var(--accent-color); }
+    .context-divider { height: 1px; background: #555; margin: 4px 0; }
+
+    /* ==========================================================================
+       4. BARRA DE TAREAS & MENÚ INICIO
+       ========================================================================== */
+    #taskbar {
+      position: absolute;
+      bottom: 0; left: 0; width: 100%;
+      height: var(--taskbar-height);
+      background: var(--taskbar-bg);
+      backdrop-filter: blur(12px);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      z-index: 80000;
+      border-top: 1px solid rgba(255,255,255,0.05);
+    }
+
+    .taskbar-left, .taskbar-right { display: flex; align-items: center; height: 100%; }
+
+    .start-btn {
+      width: 48px; height: 100%;
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer; fill: #fff;
+      transition: background 0.2s;
+    }
+    .start-btn:hover { background: rgba(255,255,255,0.1); fill: var(--accent-light); }
+
+    .search-box {
+      height: 100%;
+      background: rgba(255,255,255,0.1);
+      display: flex; align-items: center;
+      padding: 0 10px; width: 200px;
+      margin-right: 10px;
+    }
+    .search-box input {
+      background: transparent; border: none; outline: none;
+      color: #fff; font-size: 12px; width: 100%;
+    }
+
+    .taskbar-items { display: flex; height: 100%; }
+    .taskbar-item {
+      width: 45px; height: 100%;
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer; border-bottom: 2px solid transparent;
+      position: relative;
+    }
+    .taskbar-item:hover { background: rgba(255,255,255,0.1); }
+    .taskbar-item.active { border-bottom-color: var(--accent-color); background: rgba(255,255,255,0.15); }
+
+    .tray-item {
+      padding: 0 8px; height: 100%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 11px; cursor: pointer;
+    }
+    .tray-item:hover { background: rgba(255,255,255,0.1); }
+    .tray-clock { flex-direction: column; text-align: right; line-height: 1.1; }
+
+    /* Menú Inicio */
+    #start-menu {
+      position: absolute;
+      bottom: var(--taskbar-height); left: 0;
+      width: var(--start-width); height: var(--start-height);
+      background: rgba(20, 20, 20, 0.95);
+      backdrop-filter: blur(20px);
+      z-index: 85000;
+      display: none;
+      grid-template-columns: 48px 220px 1fr;
+      border: 1px solid rgba(255,255,255,0.1);
+      box-shadow: 0 -5px 20px rgba(0,0,0,0.5);
+    }
+    .start-sidebar { display: flex; flex-direction: column; justify-content: space-between; padding: 10px 0; background: rgba(0,0,0,0.2); }
+    .start-sidebar-top, .start-sidebar-bottom { display: flex; flex-direction: column; gap: 5px; }
+    .start-icon-btn { width: 48px; height: 40px; display: flex; align-items: center; justify-content: center; cursor: pointer; fill: #fff; }
+    .start-icon-btn:hover { background: rgba(255,255,255,0.1); }
+
+    .start-apps-list { overflow-y: auto; padding: 10px; display: flex; flex-direction: column; gap: 2px; }
+    .start-app-item { display: flex; align-items: center; gap: 10px; padding: 6px 8px; cursor: pointer; border-radius: 2px; font-size: 12px; }
+    .start-app-item:hover { background: rgba(255,255,255,0.1); }
+    .start-app-item svg { width: 20px; height: 20px; }
+
+    .start-tiles { padding: 10px; overflow-y: auto; display: grid; grid-template-columns: repeat(3, 1fr); auto-rows: 80px; gap: 8px; }
+    .tile { background: var(--accent-color); padding: 8px; display: flex; flex-direction: column; justify-content: space-between; font-size: 11px; cursor: pointer; transition: transform 0.1s; }
+    .tile:hover { transform: scale(1.02); }
+    .tile.wide { grid-column: span 2; }
+
+    /* ==========================================================================
+       5. SISTEMA DE VENTANAS
+       ========================================================================== */
+    .window {
+      position: absolute;
+      background: var(--window-bg);
+      border: 1px solid rgba(0,0,0,0.3);
+      box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+      display: flex;
+      flex-direction: column;
+      min-width: 300px;
+      min-height: 200px;
+      z-index: 100;
+      overflow: hidden;
+      border-radius: 4px 4px 0 0;
+      color: var(--text-dark);
+    }
+    .window.active { border-color: var(--accent-color); box-shadow: 0 10px 40px rgba(0,0,0,0.5); }
+    .window.maximized { top: 0 !important; left: 0 !important; width: 100% !important; height: calc(100% - var(--taskbar-height)) !important; border-radius: 0; }
+
+    .window-header {
+      height: 32px;
+      background: var(--window-header);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-left: 10px;
+      cursor: default;
+      border-bottom: 1px solid rgba(0,0,0,0.05);
+    }
+    .window-title { font-size: 12px; display: flex; align-items: center; gap: 8px; }
+    .window-title svg { width: 16px; height: 16px; }
+
+    .window-controls { display: flex; height: 100%; }
+    .win-btn {
+      width: 45px; height: 100%;
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer; fill: var(--text-dark);
+    }
+    .win-btn:hover { background: rgba(0,0,0,0.05); }
+    .win-btn.close:hover { background: #e81123; fill: #fff; }
+
+    .window-body { flex: 1; position: relative; overflow: auto; background: var(--window-bg); color: var(--text-dark); }
+
+    /* ==========================================================================
+       6. ESTILOS DE APLICACIONES INTERNAS
+       ========================================================================== */
+    /* Explorador de Archivos */
+    .explorer-container { display: flex; height: 100%; }
+    .explorer-sidebar { width: 160px; background: rgba(0,0,0,0.03); border-right: 1px solid rgba(0,0,0,0.05); padding: 10px 0; font-size: 12px; }
+    .sidebar-tree-item { padding: 5px 15px; cursor: pointer; display: flex; align-items: center; gap: 8px; }
+    .sidebar-tree-item:hover { background: rgba(0,0,0,0.05); }
+    .explorer-main { flex: 1; display: flex; flex-direction: column; }
+    .explorer-toolbar { height: 35px; border-bottom: 1px solid rgba(0,0,0,0.05); display: flex; align-items: center; padding: 0 10px; gap: 10px; }
+    .explorer-content { flex: 1; padding: 15px; display: grid; grid-template-columns: repeat(auto-fill, minmax(80px, 1fr)); gap: 15px; align-content: start; }
+
+    /* Terminal CMD / PowerShell */
+    .terminal-container { background: #0c0c0c; color: #cccccc; font-family: 'Consolas', monospace; font-size: 13px; padding: 10px; height: 100%; overflow-y: auto; }
+    .terminal-output { white-space: pre-wrap; margin-bottom: 5px; }
+    .terminal-line { display: flex; }
+    .terminal-input { background: transparent; border: none; outline: none; color: #fff; font-family: inherit; font-size: inherit; flex: 1; margin-left: 5px; }
+
+    /* VirtualBox Simulator */
+    .vbox-container { display: flex; height: 100%; background: #2d2d2d; color: #fff; }
+    .vbox-sidebar { width: 200px; background: #252525; border-right: 1px solid #3d3d3d; padding: 10px; }
+    .vbox-main { flex: 1; display: flex; flex-direction: column; }
+    .vbox-toolbar { height: 45px; background: #383838; border-bottom: 1px solid #454545; display: flex; align-items: center; padding: 0 10px; gap: 5px; }
+    .vbox-btn { padding: 6px 12px; background: #4a4a4a; border: 1px solid #555; color: #fff; cursor: pointer; font-size: 12px; border-radius: 2px; }
+    .vbox-btn:hover { background: #5a5a5a; }
+    .vbox-display { flex: 1; background: #000; position: relative; display: flex; align-items: center; justify-content: center; }
+    .vbox-iframe { width: 100%; height: 100%; border: none; }
+
+    /* Configuración */
+    .settings-container { display: flex; height: 100%; }
+    .settings-menu { width: 200px; background: rgba(0,0,0,0.02); border-right: 1px solid rgba(0,0,0,0.05); padding: 10px 0; }
+    .settings-menu-item { padding: 10px 20px; font-size: 13px; cursor: pointer; }
+    .settings-menu-item.active { background: rgba(0,0,0,0.05); border-left: 3px solid var(--accent-color); font-weight: bold; }
+    .settings-content { flex: 1; padding: 20px; overflow-y: auto; }
+
+    /* Paint */
+    .paint-container { display: flex; flex-direction: column; height: 100%; }
+    .paint-toolbar { height: 40px; background: #f5f5f5; border-bottom: 1px solid #ccc; display: flex; align-items: center; padding: 0 10px; gap: 10px; }
+    .paint-canvas-wrap { flex: 1; background: #808080; overflow: auto; display: flex; align-items: center; justify-content: center; padding: 10px; }
+    canvas { background: #fff; box-shadow: 0 0 5px rgba(0,0,0,0.3); cursor: crosshair; }
+
+    /* CENTRO DE NOTIFICACIONES */
+    #action-center {
+      position: absolute;
+      top: 0; right: -350px;
+      width: 350px; height: calc(100% - var(--taskbar-height));
+      background: rgba(25, 25, 25, 0.95);
+      backdrop-filter: blur(20px);
+      z-index: 84000;
+      transition: right 0.3s ease;
+      display: flex; flex-direction: column;
+      border-left: 1px solid rgba(255,255,255,0.1);
+      padding: 15px; color: #fff;
+    }
+    #action-center.open { right: 0; }
+    .notif-list { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; }
+    .notif-card { background: rgba(255,255,255,0.05); padding: 10px; border-radius: 4px; font-size: 12px; }
+    .quick-actions { display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px; margin-top: 15px; }
+    .qa-btn { background: rgba(255,255,255,0.1); border: none; height: 50px; color: #fff; font-size: 10px; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; }
+    .qa-btn.active { background: var(--accent-color); }
+
+    /* BSOD Fake Screen */
+    #bsod-screen {
+      background: #0078d7; color: #fff; font-family: 'Segoe UI', sans-serif;
+      padding: 100px; display: none; z-index: 100000; justify-content: flex-start; text-align: left;
+    }
+    #bsod-screen h1 { font-size: 120px; font-weight: normal; margin-bottom: 20px; }
+    #bsod-screen p { font-size: 22px; line-height: 1.4; max-width: 800px; }
+
+    /* Utilidades */
+    .btn { padding: 6px 14px; background: #e1e1e1; border: 1px solid #adadad; cursor: pointer; font-size: 12px; }
+    .btn:hover { background: #e5f1fb; border-color: #0078d7; }
+    .btn-primary { background: var(--accent-color); color: #fff; border: none; }
+    .btn-primary:hover { opacity: 0.9; }
+
+    /* Panel Debug */
+    #debug-panel {
+      position: absolute; top: 10px; right: 10px; background: rgba(0,0,0,0.8);
+      color: #00ff00; font-family: monospace; padding: 10px; font-size: 11px;
+      z-index: 999999; display: none; pointer-events: none; border: 1px solid #00ff00;
+    }
+  </style>
+</head>
+<body class="theme-dark">
+
+  <!-- ==========================================================================
+       PANTALLA DE ARRANQUE Y LOGIN
+       ========================================================================== -->
+  <div id="boot-screen" class="screen-overlay">
+    <div class="win-logo-grid"><div></div><div></div><div></div><div></div></div>
+    <div class="spinner"></div>
+    <div class="boot-text" id="boot-status">Starting Windows 10 Ultimate Web Simulator...</div>
+  </div>
+
+  <div id="lock-screen" class="screen-overlay" style="display:none;" onclick="unlockScreen()">
+    <div class="lock-clock" id="lock-clock">00:00</div>
+    <div class="lock-date" id="lock-date">Lunes, 1 de Enero</div>
+    <div style="font-size: 14px; margin-top: 40px; color: #ddd;">Presiona o haz clic para continuar</div>
+  </div>
+
+  <div id="login-screen" class="screen-overlay" style="display:none;">
+    <div class="user-avatar">👤</div>
+    <div style="font-size: 20px; font-weight: 300;" id="login-username">c00lkidd_v2yt</div>
+    <div class="login-input-group">
+      <input type="password" id="login-pass" placeholder="Contraseña (Opcional)" onkeypress="if(event.key==='Enter') executeLogin()">
+      <button onclick="executeLogin()">→</button>
+    </div>
+  </div>
+
+  <!-- ==========================================================================
+       ESCRITORIO
+       ========================================================================== -->
+  <div id="desktop" oncontextmenu="showContextMenu(event, 'desktop')">
+    <!-- Iconos del escritorio -->
+    <div class="desktop-icon" ondblclick="openApp('thispc')">
+      <svg viewBox="0 0 24 24"><path fill="#fff" d="M4 6h16v10H4z"/><path fill="#aaa" d="M2 18h20v2H2z"/></svg>
+      <span>Este Equipo</span>
+    </div>
+    <div class="desktop-icon" ondblclick="openApp('explorer')">
+      <svg viewBox="0 0 24 24"><path fill="#ffca28" d="M10 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2h-8l-2-2z"/></svg>
+      <span>Archivos</span>
+    </div>
+    <div class="desktop-icon" ondblclick="openApp('browser')">
+      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="#0078d7"/><path fill="#fff" d="M12 4a8 8 0 1 0 0 16 8 8 0 0 0 0-16zm-1 13.93A6.5 6.5 0 0 1 6.07 13H11v4.93z"/></svg>
+      <span>Luna Browser</span>
+    </div>
+    <div class="desktop-icon" ondblclick="openApp('terminal')">
+      <svg viewBox="0 0 24 24"><path fill="#000" d="M2 4h20v16H2z"/><path fill="#00ff00" d="M5 8l4 4-4 4v-2l2-2-2-2V8zm6 8h6v-2h-6v2z"/></svg>
+      <span>Terminal</span>
+    </div>
+    <div class="desktop-icon" ondblclick="openApp('virtualbox')">
+      <svg viewBox="0 0 24 24"><path fill="#1e88e5" d="M3 3h18v18H3z"/><path fill="#fff" d="M7 7h10v10H7z"/></svg>
+      <span>VirtualBox</span>
+    </div>
+    <div class="desktop-icon" ondblclick="openApp('settings')">
+      <svg viewBox="0 0 24 24"><path fill="#888" d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/></svg>
+      <span>Configuración</span>
+    </div>
+    <div class="desktop-icon" ondblclick="openApp('paint')">
+      <svg viewBox="0 0 24 24"><path fill="#e91e63" d="M12 3c-4.97 0-9 4.03-9 9 0 2.12.74 4.07 1.97 5.61.43.53 1.03.89 1.7 1.02 1.25.24 2.33-.78 2.33-2.02 0-.55.22-1.05.59-1.41.36-.37.86-.59 1.41-.59h1.67c2.76 0 5-2.24 5-5 0-3.86-3.14-6.63-6.67-6.61z"/></svg>
+      <span>Paint</span>
+    </div>
+    <div class="desktop-icon" ondblclick="openApp('recycle')">
+      <svg viewBox="0 0 24 24"><path fill="#aaa" d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
+      <span>Papelera</span>
+    </div>
+  </div>
+
+  <!-- Menú Contextual del Escritorio -->
+  <div id="desktop-context-menu" class="context-menu">
+    <div class="context-menu-item" onclick="desktopViewOption()">Ver ></div>
+    <div class="context-menu-item" onclick="sortDesktopIcons()">Ordenar por nombre</div>
+    <div class="context-menu-item" onclick="location.reload()">Actualizar</div>
+    <div class="context-divider"></div>
+    <div class="context-menu-item" onclick="createNewFolder()">Nueva carpeta</div>
+    <div class="context-divider"></div>
+    <div class="context-menu-item" onclick="openApp('settings')">Personalizar</div>
+  </div>
+
+  <!-- ==========================================================================
+       BARRA DE TAREAS & MENÚ INICIO
+       ========================================================================== -->
+  <div id="taskbar">
+    <div class="taskbar-left">
+      <div class="start-btn" onclick="toggleStartMenu()">
+        <svg width="16" height="16" viewBox="0 0 88 88"><path fill="currentColor" d="M0 12.402l35.687-4.86.016 34.423-35.67.203zm35.67 33.527l.025 34.437L0 75.525V55.856zm4.249-39.028L87.728 0v41.527l-47.809.376zm47.81 31.004V88l-47.81-6.738-.02-34.18z"/></svg>
+      </div>
+      <div class="search-box">
+        <input type="text" placeholder="Escribe aquí para buscar..." onkeydown="if(event.key==='Enter') executeSearch(this.value)">
+      </div>
+      <div class="taskbar-items" id="taskbar-apps"></div>
+    </div>
+    <div class="taskbar-right">
+      <div class="tray-item" onclick="toggleActionCenter()">💬</div>
+      <div class="tray-item tray-clock" onclick="toggleActionCenter()">
+        <span id="tray-time">00:00</span>
+        <span id="tray-date" style="font-size: 9px; color: #aaa;">01/01/2026</span>
+      </div>
+      <div class="tray-item" onclick="minimizeAll()" style="width: 5px; border-left: 1px solid #555; margin-left: 5px;"></div>
+    </div>
+  </div>
+
+  <!-- MENÚ INICIO -->
+  <div id="start-menu">
+    <div class="start-sidebar">
+      <div class="start-sidebar-top">
+        <div class="start-icon-btn" title="Usuario">👤</div>
+      </div>
+      <div class="start-sidebar-bottom">
+        <div class="start-icon-btn" title="Configuración" onclick="openApp('settings'); toggleStartMenu();">⚙️</div>
+        <div class="start-icon-btn" title="Inicio/Apagado" onclick="triggerPowerMenu()">電源</div>
+      </div>
+    </div>
+    <div class="start-apps-list">
+      <div class="start-app-item" onclick="openApp('explorer'); toggleStartMenu();">📂 Explorador de Archivos</div>
+      <div class="start-app-item" onclick="openApp('browser'); toggleStartMenu();">🌐 Luna Browser</div>
+      <div class="start-app-item" onclick="openApp('terminal'); toggleStartMenu();">💻 Terminal CMD</div>
+      <div class="start-app-item" onclick="openApp('virtualbox'); toggleStartMenu();">📦 Oracle VirtualBox</div>
+      <div class="start-app-item" onclick="openApp('notepad'); toggleStartMenu();">📝 Bloc de Notas</div>
+      <div class="start-app-item" onclick="openApp('calc'); toggleStartMenu();">🧮 Calculadora</div>
+      <div class="start-app-item" onclick="openApp('paint'); toggleStartMenu();">🎨 Paint Studio</div>
+      <div class="start-app-item" onclick="openApp('taskmgr'); toggleStartMenu();">📊 Administrador de Tareas</div>
+      <div class="start-app-item" onclick="openApp('security'); toggleStartMenu();">🛡️ Centro de Seguridad</div>
+      <div class="start-app-item" onclick="openApp('store'); toggleStartMenu();">🛍️ Microsoft Store</div>
+    </div>
+    <div class="start-tiles">
+      <div class="tile wide" onclick="openApp('browser'); toggleStartMenu();">
+        <span>Luna Browser</span>
+        <span style="font-size: 20px;">🌐</span>
+      </div>
+      <div class="tile" onclick="openApp('virtualbox'); toggleStartMenu();">
+        <span>VMs</span>
+        <span style="font-size: 20px;">📦</span>
+      </div>
+      <div class="tile" onclick="openApp('paint'); toggleStartMenu();">
+        <span>Canvas</span>
+        <span style="font-size: 20px;">🎨</span>
+      </div>
+      <div class="tile wide" onclick="openApp('settings'); toggleStartMenu();">
+        <span>Ajustes del Sistema</span>
+        <span style="font-size: 10px;">Personalización & Red</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- CENTRO DE NOTIFICACIONES -->
+  <div id="action-center">
+    <div style="font-size: 14px; font-weight: bold; margin-bottom: 10px;">Notificaciones</div>
+    <div class="notif-list" id="notif-container">
+      <div class="notif-card">
+        <b>Sistema</b><br>Windows 10 Ultimate Web Simulator iniciado correctamente.
+      </div>
+    </div>
+    <div class="quick-actions">
+      <button class="qa-btn active">Red</button>
+      <button class="qa-btn active">Bluetooth</button>
+      <button class="qa-btn" onclick="toggleTheme()">Tema</button>
+      <button class="qa-btn" onclick="triggerFakeBSOD()">BSOD Test</button>
+    </div>
+  </div>
+
+  <!-- BSOD SCREEN -->
+  <div id="bsod-screen" class="screen-overlay">
+    <h1>:(</h1>
+    <p>Se ha producido un problema en el simulador y necesita reiniciarse.</p>
+    <p style="margin-top: 20px;">Recopilando información de error ficticia... <span id="bsod-progress">0</span>%</p>
+    <p style="font-size: 12px; margin-top: 40px; opacity: 0.8;">Código de detención: SIMULATED_SYSTEM_FAILURE</p>
+  </div>
+
+  <!-- DEBUG PANEL -->
+  <div id="debug-panel">
+    <div>=== SYSTEM DEBUG ===</div>
+    <div>FPS: <span id="debug-fps">60</span></div>
+    <div>Ventanas Activas: <span id="debug-windows">0</span></div>
+    <div>Memoria RAM Sim: 4096 / 16384 MB</div>
+  </div>
+
+  <!-- ==========================================================================
+       7. CORE JAVASCRIPT - LOGICA DEL SISTEMA Y APLICACIONES
+       ========================================================================== -->
+  <script>
+    /* --------------------------------------------------------------------------
+       CONFIGURACIÓN GLOBAL Y ESTADO
+       -------------------------------------------------------------------------- */
+    const AURAOS_URL = "https://auraoslinux.duckdns.org/";
+    let activeWindows = {};
+    let zIndexCounter = 1000;
+    let systemUser = localStorage.getItem('win10_user') || 'c00lkidd_v2yt';
+    let audioCtx = null;
+
+    // Sistema de Archivos Simulado (LocalStorage)
+    let defaultFS = {
+      "Desktop": {},
+      "Documents": { "notas.txt": "Bienvenido al simulador web de Windows 10." },
+      "Downloads": {},
+      "Pictures": {},
+      "Music": {}
+    };
+    let virtualFS = JSON.parse(localStorage.getItem('win10_fs')) || defaultFS;
+
+    function saveFS() {
+      localStorage.setItem('win10_fs', JSON.stringify(virtualFS));
+    }
+
+    /* --------------------------------------------------------------------------
+       SISTEMA DE SONIDO (WEB AUDIO API)
+       -------------------------------------------------------------------------- */
+    function playSound(type) {
+      try {
+        if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+
+        if (type === 'click') {
+          osc.frequency.setValueAtTime(800, audioCtx.currentTime);
+          gain.gain.setValueAtTime(0.05, audioCtx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.05);
+          osc.start(); osc.stop(audioCtx.currentTime + 0.05);
+        } else if (type === 'error') {
+          osc.type = 'sawtooth';
+          osc.frequency.setValueAtTime(150, audioCtx.currentTime);
+          gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.2);
+          osc.start(); osc.stop(audioCtx.currentTime + 0.2);
+        } else if (type === 'notif') {
+          osc.frequency.setValueAtTime(523.25, audioCtx.currentTime);
+          osc.frequency.setValueAtTime(659.25, audioCtx.currentTime + 0.1);
+          gain.gain.setValueAtTime(0.08, audioCtx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.3);
+          osc.start(); osc.stop(audioCtx.currentTime + 0.3);
+        }
+      } catch (e) {}
+    }
+
+    /* --------------------------------------------------------------------------
+       ARRANQUE Y SECUENCIA DE INICIO
+       -------------------------------------------------------------------------- */
+    window.addEventListener('DOMContentLoaded', () => {
+      initClock();
+      runBootSequence();
+      setupGlobalEvents();
+      document.getElementById('login-username').innerText = systemUser;
+    });
+
+    function runBootSequence() {
+      const status = document.getElementById('boot-status');
+      const steps = [
+        "Loading system components...",
+        "Initializing desktop services...",
+        "Checking virtual devices...",
+        "Starting explorer.exe simulation..."
+      ];
+      let i = 0;
+      const interval = setInterval(() => {
+        if (i < steps.length) {
+          status.innerText = steps[i];
+          i++;
+        } else {
+          clearInterval(interval);
+          document.getElementById('boot-screen').style.opacity = '0';
+          setTimeout(() => {
+            document.getElementById('boot-screen').style.display = 'none';
+            document.getElementById('lock-screen').style.display = 'flex';
+          }, 500);
+        }
+      }, 600);
+    }
+
+    function unlockScreen() {
+      playSound('click');
+      document.getElementById('lock-screen').style.display = 'none';
+      document.getElementById('login-screen').style.display = 'flex';
+    }
+
+    function executeLogin() {
+      playSound('click');
+      document.getElementById('login-screen').style.display = 'none';
+      pushNotification("Bienvenido", `Iniciado sesión como ${systemUser}`);
+    }
+
+    /* --------------------------------------------------------------------------
+       RELOJ Y NOTIFICACIONES
+       -------------------------------------------------------------------------- */
+    function initClock() {
+      function update() {
+        const now = new Date();
+        const hrs = String(now.getHours()).padStart(2, '0');
+        const mins = String(now.getMinutes()).padStart(2, '0');
+        const timeStr = `${hrs}:${mins}`;
+        const dateStr = now.toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric' });
+
+        document.getElementById('tray-time').innerText = timeStr;
+        document.getElementById('tray-date').innerText = dateStr;
+        document.getElementById('lock-clock').innerText = timeStr;
+        document.getElementById('lock-date').innerText = now.toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' });
+      }
+      update();
+      setInterval(update, 1000);
+    }
+
+    function pushNotification(title, text) {
+      playSound('notif');
+      const container = document.getElementById('notif-container');
+      const card = document.createElement('div');
+      card.className = 'notif-card';
+      card.innerHTML = `<b>${title}</b><br>${text}`;
+      container.prepend(card);
+    }
+
+    function toggleActionCenter() {
+      playSound('click');
+      document.getElementById('action-center').classList.toggle('open');
+    }
+
+    /* --------------------------------------------------------------------------
+       GESTOR DE VENTANAS (CORE WINDOW MANAGER)
+       -------------------------------------------------------------------------- */
+    function createAppWindow(id, title, width, height, contentHTML, iconSvg = '') {
+      if (activeWindows[id]) {
+        focusWindow(id);
+        return;
+      }
+
+      const win = document.createElement('div');
+      win.className = 'window active';
+      win.id = `win-${id}`;
+      win.style.width = width + 'px';
+      win.style.height = height + 'px';
+      win.style.top = (100 + Object.keys(activeWindows).length * 20) + 'px';
+      win.style.left = (150 + Object.keys(activeWindows).length * 20) + 'px';
+      win.style.zIndex = ++zIndexCounter;
+
+      win.innerHTML = `
+        <div class="window-header" onmousedown="dragWindow(event, '${id}')">
+          <div class="window-title">${iconSvg} ${title}</div>
+          <div class="window-controls">
+            <div class="win-btn" onclick="minimizeWindow('${id}')">―</div>
+            <div class="win-btn" onclick="maximizeWindow('${id}')">🗖</div>
+            <div class="win-btn close" onclick="closeWindow('${id}')">✕</div>
+          </div>
+        </div>
+        <div class="window-body">${contentHTML}</div>
+      `;
+
+      win.addEventListener('mousedown', () => focusWindow(id));
+      document.body.appendChild(win);
+
+      activeWindows[id] = { element: win, minimized: false, maximized: false };
+      addTaskbarIcon(id, title);
+      playSound('click');
+      updateDebugInfo();
+    }
+
+    function focusWindow(id) {
+      Object.keys(activeWindows).forEach(wId => {
+        document.getElementById(`win-${wId}`)?.classList.remove('active');
+      });
+      const win = document.getElementById(`win-${id}`);
+      if (win) {
+        win.classList.add('active');
+        win.style.display = 'flex';
+        win.style.zIndex = ++zIndexCounter;
+        activeWindows[id].minimized = false;
+      }
+    }
+
+    function closeWindow(id) {
+      playSound('click');
+      const win = document.getElementById(`win-${id}`);
+      if (win) win.remove();
+      delete activeWindows[id];
+      removeTaskbarIcon(id);
+      updateDebugInfo();
+    }
+
+    function minimizeWindow(id) {
+      playSound('click');
+      const win = document.getElementById(`win-${id}`);
+      if (win) {
+        win.style.display = 'none';
+        activeWindows[id].minimized = true;
+      }
+    }
+
+    function maximizeWindow(id) {
+      playSound('click');
+      const win = document.getElementById(`win-${id}`);
+      if (win) {
+        win.classList.toggle('maximized');
+      }
+    }
+
+    function dragWindow(e, id) {
+      if (e.target.classList.contains('win-btn')) return;
+      const win = document.getElementById(`win-${id}`);
+      if (win.classList.contains('maximized')) return;
+
+      focusWindow(id);
+      let posX = e.clientX - win.offsetLeft;
+      let posY = e.clientY - win.offsetTop;
+
+      function moveHandler(e) {
+        win.style.left = (e.clientX - posX) + 'px';
+        win.style.top = (e.clientY - posY) + 'px';
+      }
+
+      function upHandler() {
+        document.removeEventListener('mousemove', moveHandler);
+        document.removeEventListener('mouseup', upHandler);
+      }
+
+      document.addEventListener('mousemove', moveHandler);
+      document.addEventListener('mouseup', upHandler);
+    }
+
+    /* --------------------------------------------------------------------------
+       INTEGRACIÓN BARRA DE TAREAS
+       -------------------------------------------------------------------------- */
+    function addTaskbarIcon(id, title) {
+      const container = document.getElementById('taskbar-apps');
+      const item = document.createElement('div');
+      item.className = 'taskbar-item active';
+      item.id = `tb-${id}`;
+      item.innerText = title.substring(0, 10);
+      item.onclick = () => {
+        if (activeWindows[id].minimized) {
+          focusWindow(id);
+        } else {
+          minimizeWindow(id);
+        }
+      };
+      container.appendChild(item);
+    }
+
+    function removeTaskbarIcon(id) {
+      document.getElementById(`tb-${id}`)?.remove();
+    }
+
+    function toggleStartMenu() {
+      playSound('click');
+      const menu = document.getElementById('start-menu');
+      menu.style.display = (menu.style.display === 'grid') ? 'none' : 'grid';
+    }
+
+    function minimizeAll() {
+      Object.keys(activeWindows).forEach(id => minimizeWindow(id));
+    }
+
+    /* --------------------------------------------------------------------------
+       APLICACIONES DEL SISTEMA
+       -------------------------------------------------------------------------- */
+    function openApp(appName) {
+      switch (appName) {
+        case 'explorer':
+        case 'thispc':
+          createAppWindow('explorer', 'Explorador de Archivos', 650, 420, renderExplorerContent());
+          break;
+        case 'terminal':
+          createAppWindow('terminal', 'Terminal [CMD]', 600, 360, renderTerminalContent());
+          break;
+        case 'browser':
+          createAppWindow('browser', 'Luna Browser', 800, 500, renderBrowserContent());
+          break;
+        case 'virtualbox':
+          createAppWindow('virtualbox', 'Oracle VirtualBox Web Simulator', 750, 480, renderVirtualBoxContent());
+          break;
+        case 'settings':
+          createAppWindow('settings', 'Configuración', 650, 450, renderSettingsContent());
+          break;
+        case 'notepad':
+          createAppWindow('notepad', 'Bloc de Notas', 500, 350, renderNotepadContent());
+          break;
+        case 'calc':
+          createAppWindow('calc', 'Calculadora', 300, 380, renderCalcContent());
+          break;
+        case 'paint':
+          createAppWindow('paint', 'Paint Studio', 700, 480, renderPaintContent(), '');
+          initPaintCanvas();
+          break;
+        case 'taskmgr':
+          createAppWindow('taskmgr', 'Administrador de Tareas', 500, 350, renderTaskMgrContent());
+          break;
+        case 'security':
+          createAppWindow('security', 'Centro de Seguridad', 550, 380, renderSecurityContent());
+          break;
+        case 'store':
+          createAppWindow('store', 'Microsoft Store', 650, 450, '<div style="padding:20px; text-align:center;"><h2>Microsoft Store</h2><p>Todas las aplicaciones simuladas están instaladas.</p></div>');
+          break;
+        default:
+          pushNotification("Error", "Aplicación no encontrada.");
+      }
+    }
+
+    /* --- EXPLORADOR DE ARCHIVOS --- */
+    function renderExplorerContent() {
+      return `
+        <div class="explorer-container">
+          <div class="explorer-sidebar">
+            <div class="sidebar-tree-item" onclick="loadExplorerPath('Desktop')">📁 Escritorio</div>
+            <div class="sidebar-tree-item" onclick="loadExplorerPath('Documents')">📁 Documentos</div>
+            <div class="sidebar-tree-item" onclick="loadExplorerPath('Downloads')">📁 Descargas</div>
+            <div class="sidebar-tree-item" onclick="loadExplorerPath('Pictures')">📁 Imágenes</div>
+          </div>
+          <div class="explorer-main">
+            <div class="explorer-toolbar">
+              <button class="btn" onclick="createNewFilePrompt()">Nuevo Archivo</button>
+            </div>
+            <div class="explorer-content" id="explorer-files">
+              ${renderVirtualFiles('Documents')}
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    function renderVirtualFiles(path) {
+      let files = virtualFS[path] || {};
+      let html = '';
+      for (let f in files) {
+        html += `<div class="desktop-icon" style="color:#000;" ondblclick="openVirtualFile('${f}', '${files[f]}')">📄 <span>${f}</span></div>`;
+      }
+      return html || '<div style="padding:10px; color:#666;">Carpeta vacía</div>';
+    }
+
+    function loadExplorerPath(path) {
+      const container = document.getElementById('explorer-files');
+      if (container) container.innerHTML = renderVirtualFiles(path);
+    }
+
+    function createNewFilePrompt() {
+      let name = prompt("Nombre del archivo:", "nuevo.txt");
+      if (name) {
+        virtualFS["Documents"][name] = "Nuevo contenido.";
+        saveFS();
+        loadExplorerPath('Documents');
+      }
+    }
+
+    function openVirtualFile(name, content) {
+      createAppWindow(`file-${name}`, name, 450, 300, `<textarea style="width:100%; height:100%; border:none; padding:10px; outline:none;">${content}</textarea>`);
+    }
+
+    /* --- TERMINAL SIMULADA --- */
+    function renderTerminalContent() {
+      return `
+        <div class="terminal-container" onclick="document.getElementById('term-input').focus()">
+          <div class="terminal-output" id="term-output">Windows 10 Ultimate Web Simulator [Build 19045-WEB]
+(c) Microsoft Corporation. Todos los derechos reservados.
+
+Escribe 'help' para ver la lista de comandos disponibles.
+</div>
+          <div class="terminal-line">
+            <span>C:\\Users\\${systemUser}&gt;</span>
+            <input type="text" id="term-input" class="terminal-input" onkeydown="handleTerminalCommand(event)">
+          </div>
+        </div>
+      `;
+    }
+
+    function handleTerminalCommand(e) {
+      if (e.key === 'Enter') {
+        const input = e.target;
+        const cmd = input.value.trim().toLowerCase();
+        const output = document.getElementById('term-output');
+
+        output.innerText += `\nC:\\Users\\${systemUser}> ${input.value}\n`;
+
+        switch(cmd) {
+          case 'help':
+            output.innerText += `Comandos disponibles:
+help, clear, cls, dir, whoami, hostname, ver, systeminfo, ping, auraos, hack, sudo, exit`;
+            break;
+          case 'clear':
+          case 'cls':
+            output.innerText = '';
+            break;
+          case 'whoami':
+            output.innerText += `${systemUser}`;
+            break;
+          case 'hostname':
+            output.innerText += `COOL-WINDOWS-PC`;
+            break;
+          case 'ver':
+            output.innerText += `Windows 10 Ultimate Web Simulator [Build 19045-WEB]`;
+            break;
+          case 'systeminfo':
+            output.innerText += `Host Name: COOL-WINDOWS-PC
+OS Name: Windows 10 Ultimate Web Simulator
+System Type: x64-based PC Simulator
+Processor: Virtual Web CPU 8-Core
+Total Physical Memory: 16,384 MB`;
+            break;
+          case 'auraos':
+            openApp('virtualbox');
+            break;
+          case 'hack':
+            output.innerText += `Iniciando protocolo de simulación cibernética...\nAccediendo a la red principal...\n¡Acceso concedido! (Es una broma :P)`;
+            break;
+          case 'sudo':
+            output.innerText += `El usuario ${systemUser} está en el archivo sudoers. Este incidente será reportado ficticiamente.`;
+            break;
+          default:
+            if(cmd !== '') output.innerText += `'${cmd}' no se reconoce como un comando interno o externo.`;
+        }
+
+        input.value = '';
+        output.parentElement.scrollTop = output.parentElement.scrollHeight;
+      }
+    }
+
+    /* --- LUNA BROWSER --- */
+    function renderBrowserContent() {
+      return `
+        <div style="display:flex; flex-direction:column; height:100%;">
+          <div style="height:35px; background:#e1e1e1; display:flex; align-items:center; padding:0 5px; gap:5px;">
+            <input type="text" id="browser-url" value="https://wikipedia.org" style="flex:1; padding:4px 8px; border:1px solid #ccc; border-radius:3px;">
+            <button class="btn" onclick="navigateBrowser()">Ir</button>
+          </div>
+          <div style="flex:1; position:relative;">
+            <iframe id="browser-frame" src="https://wikipedia.org" style="width:100%; height:100%; border:none;"></iframe>
+          </div>
+        </div>
+      `;
+    }
+
+    function navigateBrowser() {
+      const url = document.getElementById('browser-url').value;
+      document.getElementById('browser-frame').src = url;
+    }
+
+    /* --- VIRTUALBOX SIMULATOR & AURAOS --- */
+    function renderVirtualBoxContent() {
+      return `
+        <div class="vbox-container">
+          <div class="vbox-sidebar">
+            <div style="font-size:12px; font-weight:bold; margin-bottom:10px;">Máquinas Virtuales</div>
+            <div style="padding:8px; background:#383838; border-radius:3px; cursor:pointer; font-size:12px;">
+              🐧 AuraOS Linux
+            </div>
+          </div>
+          <div class="vbox-main">
+            <div class="vbox-toolbar">
+              <button class="vbox-btn" onclick="startVM()">▶ Iniciar</button>
+              <button class="vbox-btn" onclick="stopVM()">⏹ Apagar</button>
+            </div>
+            <div class="vbox-display" id="vm-display">
+              <div id="vm-placeholder" style="text-align:center;">
+                <h3>AuraOS Linux VM</h3>
+                <p style="color:#aaa; font-size:12px; margin-top:5px;">Estado: Apagada</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    function startVM() {
+      const display = document.getElementById('vm-display');
+      display.innerHTML = `<div style="color:#00ff00; font-family:monospace;">Iniciando BIOS virtual...<br>Cargando Kernel AuraOS...</div>`;
+
+      setTimeout(() => {
+        display.innerHTML = `
+          <iframe src="${AURAOS_URL}" class="vbox-iframe" onerror="renderVMFallback()"></iframe>
+        `;
+      }, 1500);
+    }
+
+    function stopVM() {
+      const display = document.getElementById('vm-display');
+      display.innerHTML = `
+        <div id="vm-placeholder" style="text-align:center;">
+          <h3>AuraOS Linux VM</h3>
+          <p style="color:#aaa; font-size:12px; margin-top:5px;">Estado: Apagada</p>
+        </div>
+      `;
+    }
+
+    function renderVMFallback() {
+      const display = document.getElementById('vm-display');
+      display.innerHTML = `
+        <div style="padding:20px; text-align:center;">
+          <p>AuraOS Linux no puede mostrarse embebido en este navegador por políticas de seguridad (X-Frame-Options/CORS).</p>
+          <button class="btn btn-primary" style="margin-top:10px;" onclick="window.open('${AURAOS_URL}', '_blank')">Abrir AuraOS en nueva pestaña</button>
+        </div>
+      `;
+    }
+
+    /* --- CONFIGURACIÓN --- */
+    function renderSettingsContent() {
+      return `
+        <div class="settings-container">
+          <div class="settings-menu">
+            <div class="settings-menu-item active">Personalización</div>
+          </div>
+          <div class="settings-content">
+            <h3>Personalización de Pantalla</h3>
+            <p style="font-size:12px; margin-top:10px;">Selecciona el tema de color:</p>
+            <div style="display:flex; gap:10px; margin-top:10px;">
+              <button class="btn" onclick="setSystemTheme('theme-dark')">Oscuro</button>
+              <button class="btn" onclick="setSystemTheme('theme-light')">Claro</button>
+              <button class="btn" onclick="setSystemTheme('theme-classic')">Azul Clásico</button>
+              <button class="btn" onclick="setSystemTheme('theme-cyberpunk')">Cyberpunk</button>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    function setSystemTheme(themeClass) {
+      document.body.className = themeClass;
+      pushNotification("Configuración", "Tema visual actualizado.");
+    }
+
+    /* --- CALCULADORA --- */
+    function renderCalcContent() {
+      return `
+        <div style="padding:10px; display:flex; flex-direction:column; gap:10px; height:100%;">
+          <input type="text" id="calc-display" readonly style="width:100%; height:40px; text-align:right; font-size:20px; padding:5px;">
+          <div style="display:grid; grid-template-columns:repeat(4, 1fr); gap:5px; flex:1;">
+            <button class="btn" onclick="calcInput('7')">7</button>
+            <button class="btn" onclick="calcInput('8')">8</button>
+            <button class="btn" onclick="calcInput('9')">9</button>
+            <button class="btn" onclick="calcInput('/')">/</button>
+            <button class="btn" onclick="calcInput('4')">4</button>
+            <button class="btn" onclick="calcInput('5')">5</button>
+            <button class="btn" onclick="calcInput('6')">6</button>
+            <button class="btn" onclick="calcInput('*')">*</button>
+            <button class="btn" onclick="calcInput('1')">1</button>
+            <button class="btn" onclick="calcInput('2')">2</button>
+            <button class="btn" onclick="calcInput('3')">3</button>
+            <button class="btn" onclick="calcInput('-')">-</button>
+            <button class="btn" onclick="calcInput('0')">0</button>
+            <button class="btn" onclick="calcClear()">C</button>
+            <button class="btn" onclick="calcEval()">=</button>
+            <button class="btn" onclick="calcInput('+')">+</button>
+          </div>
+        </div>
+      `;
+    }
+
+    let calcStr = "";
+    function calcInput(val) { calcStr += val; document.getElementById('calc-display').value = calcStr; }
+    function calcClear() { calcStr = ""; document.getElementById('calc-display').value = ""; }
+    function calcEval() { try { calcStr = eval(calcStr).toString(); document.getElementById('calc-display').value = calcStr; } catch(e) { calcStr = "Error"; } }
+
+    /* --- BLOC DE NOTAS --- */
+    function renderNotepadContent() {
+      return `<textarea style="width:100%; height:100%; border:none; padding:10px; outline:none; font-family:monospace; resize:none;"></textarea>`;
+    }
+
+    /* --- PAINT STUDIO --- */
+    function renderPaintContent() {
+      return `
+        <div class="paint-container">
+          <div class="paint-toolbar">
+            <input type="color" id="paint-color" value="#000000">
+            <input type="range" id="paint-size" min="1" max="20" value="3">
+            <button class="btn" onclick="clearPaintCanvas()">Limpiar</button>
+          </div>
+          <div class="paint-canvas-wrap">
+            <canvas id="paint-canvas" width="600" height="380"></canvas>
+          </div>
+        </div>
+      `;
+    }
+
+    function initPaintCanvas() {
+      setTimeout(() => {
+        const canvas = document.getElementById('paint-canvas');
+        if (!canvas) return;
+        const ctx = canvas.getContext('2d');
+        let painting = false;
+
+        canvas.onmousedown = () => painting = true;
+        canvas.onmouseup = () => { painting = false; ctx.beginPath(); };
+        canvas.onmousemove = (e) => {
+          if (!painting) return;
+          const rect = canvas.getBoundingClientRect();
+          ctx.lineWidth = document.getElementById('paint-size').value;
+          ctx.lineCap = 'round';
+          ctx.strokeStyle = document.getElementById('paint-color').value;
+
+          ctx.lineTo(e.clientX - rect.left, e.clientY - rect.top);
+          ctx.stroke();
+          ctx.beginPath();
+          ctx.moveTo(e.clientX - rect.left, e.clientY - rect.top);
+        };
+      }, 100);
+    }
+
+    function clearPaintCanvas() {
+      const canvas = document.getElementById('paint-canvas');
+      if (canvas) {
+        const ctx = canvas.getContext('2d');
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+      }
+    }
+
+    /* --- ADMIN DE TAREAS --- */
+    function renderTaskMgrContent() {
+      return `
+        <div style="padding:10px;">
+          <table style="width:100%; text-align:left; font-size:12px; border-collapse:collapse;">
+            <tr style="border-bottom:1px solid #ccc;"><th>Proceso</th><th>Estado</th><th>Uso CPU</th></tr>
+            <tr><td>explorer.exe</td><td>En ejecución</td><td>0.5%</td></tr>
+            <tr><td>virtualbox.exe</td><td>En ejecución</td><td>2.1%</td></tr>
+            <tr><td>dwm.exe</td><td>En ejecución</td><td>1.2%</td></tr>
+          </table>
+        </div>
+      `;
+    }
+
+    /* --- CENTRO DE SEGURIDAD --- */
+    function renderSecurityContent() {
+      return `
+        <div style="padding:20px; text-align:center;">
+          <h2 style="color:#2e7d32;">🛡️ Estado de Protección: Activo</h2>
+          <p style="font-size:12px; margin-top:10px;">El sistema simulado está protegido contra amenazas ficticias.</p>
+          <button class="btn btn-primary" style="margin-top:15px;" onclick="alert('Análisis simulado completado: Sin amenazas.')">Ejecutar Examen Rápido</button>
+        </div>
+      `;
+    }
+
+    /* --------------------------------------------------------------------------
+       EVENTOS GLOBALES & UTILIDADES
+       -------------------------------------------------------------------------- */
+    function setupGlobalEvents() {
+      document.addEventListener('click', (e) => {
+        const contextMenu = document.getElementById('desktop-context-menu');
+        if (contextMenu) contextMenu.style.display = 'none';
+
+        const startMenu = document.getElementById('start-menu');
+        const startBtn = document.querySelector('.start-btn');
+        if (startMenu && !startMenu.contains(e.target) && !startBtn.contains(e.target)) {
+          startMenu.style.display = 'none';
+        }
+      });
+
+      // Atajos de Teclado
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Meta') toggleStartMenu();
+        if (e.ctrlKey && e.key === 'b') triggerFakeBSOD();
+      });
+    }
+
+    function showContextMenu(e, type) {
+      e.preventDefault();
+      const menu = document.getElementById('desktop-context-menu');
+      menu.style.left = e.clientX + 'px';
+      menu.style.top = e.clientY + 'px';
+      menu.style.display = 'block';
+    }
+
+    function triggerFakeBSOD() {
+      const bsod = document.getElementById('bsod-screen');
+      bsod.style.display = 'flex';
+      let progress = 0;
+      const interval = setInterval(() => {
+        progress += 20;
+        document.getElementById('bsod-progress').innerText = progress;
+        if (progress >= 100) {
+          clearInterval(interval);
+          setTimeout(() => {
+            bsod.style.display = 'none';
+            location.reload();
+          }, 1000);
+        }
+      }, 500);
+    }
+
+    function triggerPowerMenu() {
+      if (confirm("¿Deseas reiniciar el simulador?")) {
+        location.reload();
+      }
+    }
+
+    function executeSearch(query) {
+      if (query.trim() !== '') {
+        openApp('browser');
+        setTimeout(() => {
+          const frame = document.getElementById('browser-frame');
+          if (frame) frame.src = `https://www.bing.com/search?q=${encodeURIComponent(query)}`;
+        }, 300);
+      }
+    }
+
+    function updateDebugInfo() {
+      document.getElementById('debug-windows').innerText = Object.keys(activeWindows).length;
+    }
+
+    function toggleTheme() {
+      const themes = ['theme-dark', 'theme-light', 'theme-classic', 'theme-cyberpunk'];
+      const current = document.body.className;
+      let next = themes[(themes.indexOf(current) + 1) % themes.length];
+      setSystemTheme(next);
+    }
+  </script>
+</body>
+</html>
